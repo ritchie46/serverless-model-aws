@@ -1,0 +1,128 @@
+
+service: batch-transform # NOTE: update this with your service name
+
+# Custom are the variables for this template.
+custom:
+  flask:
+    # These setting will be exposed for the model in the docker image
+    BUCKET: <bucket> containing the model artifacts.
+    MODEL_PKL: <key> for the above defined bucket
+    SCALER_PKL: <key> for the above defined bucket
+    MEAN_PKL: <key> for the above defined bucket
+    COLUMNS_PKL: <key> for the above defined bucket
+    TEST_DATA: <key> for the above defined bucket
+    AWS_REGION: eu-west-1
+
+  # Docker image that will be deployed
+  image: <repository url>
+  desiredTaskCount: 1
+
+  # Settings for the naming of new AWS resources
+  prefix: <str> Resources made in AWS will have this prefix
+  usecase: <str> Resoures made in AWS will have this name
+  model: <str> Name of the model. Name will be given to the Resources in AWS
+
+  # Bucket & key to where the results are written
+  outputBucket: <bucket>
+  outputKey: <key>
+
+  # Bucket that will be generated for this stack. New data should be deployed here.
+  bucket: ${self:custom.prefix}-${self:custom.usecase}-new-data
+
+  # File type that should trigger the Lambda
+  triggerExtension: .parquet
+
+  # Subnet and security group names in which the AWS Task should run.
+  subnet:  <subnet name>
+  securityGroup: <security group name>
+
+  # ARN of the Role that will be assigned to the Task. It needs SQS, S3 and ECS access
+  ecsTaskExecutionRole: <arn of role with the needed permissions>
+
+
+provider:
+  name: aws
+  runtime: python3.6
+  stage: dev
+  region: ${self:custom.flask.AWS_REGION}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+        - sqs:*
+        - ecs:*
+        - iam:PassRole
+      Resource: "*"
+  environment:
+      RESOURCE_NAME: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+      OUTPUT_BUCKET: ${self:custom.outputBucket}
+      OUTPUT_KEY: ${self:custom.outputKey}
+      SUBNET: ${self:custom.subnet}
+      SECURITY_GROUP: ${self:custom.securityGroup}
+      DESIRED_COUNT: ${self:custom.desiredTaskCount}
+
+
+functions:
+  fillSQS:
+    handler: handler.lambda_handler
+    name: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+    events:
+      - s3:
+          bucket: ${self:custom.bucket}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: ${self:custom.triggerExtension}
+
+resources:
+  Resources:
+    # Needed for the container logs
+    ContainerLogs:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: /ecs/batch-transform
+
+    NewDataQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+
+    ECSCluster:
+      Type: AWS::ECS::Cluster
+      Properties:
+        ClusterName: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+
+    BatchTransformTask:
+      Type: AWS::ECS::TaskDefinition
+      Properties:
+        TaskRoleArn: ${self:custom.ecsTaskExecutionRole}
+        ExecutionRoleArn: ${self:custom.ecsTaskExecutionRole}
+        Cpu: 2048
+        Memory: 16384
+        Family: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+        NetworkMode: awsvpc
+        RequiresCompatibilities:
+          - FARGATE
+        ContainerDefinitions:
+          -
+            Name: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+            Image: ${self:custom.image}
+            Environment:
+              -
+                Name: SQS_QUEUE
+                Value: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.model}
+            Command:
+              - python
+              - batch_transform.py
+            PortMappings:
+              -
+                ContainerPort: 80
+                HostPort: 80
+                Protocol: tcp
+            LogConfiguration:
+              LogDriver: awslogs
+              Options:
+                awslogs-region: ${self:provider.region}
+                awslogs-group: ${self:resources.Resources.ContainerLogs.Properties.LogGroupName}
+                awslogs-stream-prefix: ecs
+
+

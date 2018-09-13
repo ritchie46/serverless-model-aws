@@ -1,0 +1,13 @@
+# required to serve the model
+flask
+gevent
+gunicorn
+boto3
+pyyaml
+
+# dependencies for the custom model
+numpy
+scipy
+scikit-learn
+pandas
+pyarrow
