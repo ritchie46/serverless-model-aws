@@ -3,16 +3,13 @@ import os
 import io
 import time
 from datetime import datetime
-import re
 import boto3
 import pandas as pd
-from wsgi import app
 from model import modelwrapper
-from model.data import prepare_data
 from cloudhelper import open_s3_file, write_s3_string
 
-sqs = boto3.resource('sqs', region_name=app.config['AWS_REGION'])
-s3 = boto3.resource('s3', region_name=app.config['AWS_REGION'])
+sqs = boto3.resource('sqs', region_name=modelwrapper.config['AWS_REGION'])
+s3 = boto3.resource('s3', region_name=modelwrapper.config['AWS_REGION'])
 
 
 class BatchTransformJob:
@@ -31,14 +28,10 @@ class BatchTransformJob:
         for message in self.messages:
             m = json.loads(message.body)
 
-            # The `=` sign is not properly encoded.
-            key = re.sub(r'version%\d*D', 'version=', m['key'], 1)
-            print(f"Downloading key: {key} from bucket: {m['bucket']}")
+            print(f"Downloading key: {m['key']} from bucket: {m['bucket']}")
 
-            f = open_s3_file(m['bucket'], key)
-            df = pd.read_parquet(f)
-
-            x = prepare_data(df, modelwrapper.columns, modelwrapper.scaler, modelwrapper.mean)
+            f = open_s3_file(m['bucket'], m['key'])
+            x = pd.read_csv(f)
 
             print('Invoked with {} records'.format(x.shape[0]))
             # Do the prediction
