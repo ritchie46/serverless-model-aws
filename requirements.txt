@@ -1,7 +1,4 @@
-# required to serve the model
-flask
-gevent
-gunicorn
+# always required
 boto3
 pyyaml
 
