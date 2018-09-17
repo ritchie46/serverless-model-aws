@@ -3,7 +3,7 @@ service: batch-transform # NOTE: update this with your service name
 
 # Custom are the variables for this template.
 custom:
-  flask:
+  dockerAvailable:
     # These setting will be exposed for the model in the docker image
     BUCKET: <bucket> containing the model artifacts.
     MODEL_PKL: <key> for the above defined bucket
