@@ -1,5 +1,5 @@
 
-service: batch-transform # NOTE: update this with your service name
+service: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.usecase} # NOTE: update this with your service name
 
 # Custom are the variables for this template.
 custom:
@@ -27,7 +27,7 @@ custom:
   outputKey: <key>
 
   # Bucket that will be generated for this stack. New data should be deployed here.
-  bucket: ${self:custom.prefix}-${self:custom.usecase}-new-data
+  bucket: ${self:custom.prefix}-${self:custom.usecase}-${self:custom.usecase}-new-data
 
   # File type that should trigger the Lambda
   triggerExtension: .parquet
