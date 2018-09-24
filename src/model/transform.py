@@ -38,11 +38,9 @@ class BatchTransformJob:
             f = open_s3_file(m['bucket'], key)
             df = pd.read_parquet(f)
 
-            x = prepare_data(df, modelwrapper.columns, modelwrapper.scaler, modelwrapper.mean)
-
-            print('Invoked with {} records'.format(x.shape[0]))
+            print('Invoked with {} records'.format(df.shape[0]))
             # Do the prediction
-            predictions = modelwrapper.predict(x)
+            predictions = modelwrapper.predict(df)
 
             f = io.StringIO()
             predictions.to_csv(f, index=False)
@@ -75,6 +73,7 @@ def run_batch_transform_job():
 
     print('Found messages, process the queue')
     btj.process_q()
+
 
 
 
