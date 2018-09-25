@@ -1,4 +1,5 @@
 from cloudhelper import open_s3_file
+from model.data import prepare_data
 import pandas as pd
 from wsgi import app
 import pickle
@@ -39,6 +40,9 @@ class ModelWrap:
             f = open_s3_file(app.config['BUCKET'], app.config['COLUMNS_PKL'])
             self._columns = pickle.load(f)
         return self._columns
+
+    def prepare_data(self, df):
+        return prepare_data(df, self.columns, self.scaler, self.mean)
 
     def predict(self, x):
         """For the input, do the predictions and return them.
