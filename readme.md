@@ -2,6 +2,8 @@
 
 This repo is a basis template for deploying a model as a batch transform job or as a server endpoint on AWS Elastic Container Service.
 
+For a more elaborate tutorial, [read my blog post](https://www.ritchievink.com/blog/2018/09/16/deploy-any-machine-learning-model-serverless-in-aws/).
+
 * A **server endpoint will** remain running and can be used as an API to do inference.
 * A **batch transform job** will be deployed as a serverless application and will do inference on new data dropped in AWS S3. The moment new data is put on an S3 Bucket, a lambda function is triggered. The lambda will put the meta data of the fresh data on an AWS SQS Queue. A container will be deployed in AWS ECS, finish the jobs on the SQS Queue and finally will shut down.
 
