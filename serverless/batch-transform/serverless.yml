@@ -79,7 +79,7 @@ resources:
     ContainerLogs:
       Type: AWS::Logs::LogGroup
       Properties:
-        LogGroupName: /ecs/batch-transform
+        LogGroupName: /ecs/batch-transform/${self:custom.usecase}/${self:custom.model}
 
     NewDataQueue:
       Type: AWS::SQS::Queue
