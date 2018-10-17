@@ -12,6 +12,7 @@ custom:
     COLUMNS_PKL: <key> for the above defined bucket
     TEST_DATA: <key> for the above defined bucket
     AWS_REGION: eu-west-1
+    MODEL: ${self:custom.model}
 
   # Docker image that will be deployed
   image: <repository url>
@@ -43,6 +44,7 @@ custom:
 provider:
   name: aws
   runtime: python3.6
+  timeout: 900
   stage: dev
   region: ${self:custom.flask.AWS_REGION}
   iamRoleStatements:
@@ -60,6 +62,7 @@ provider:
       SUBNET: ${self:custom.subnet}
       SECURITY_GROUP: ${self:custom.securityGroup}
       DESIRED_COUNT: ${self:custom.desiredTaskCount}
+      MODEL: ${self:custom.model}
 
 
 functions:
